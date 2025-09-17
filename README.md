@@ -1,6 +1,6 @@
-# SIH-2025: Alumni Portal
+# SIH-2025: Automated Attendance System for Rural Schools
 
-This is a web application built for the Smart India Hackathon 2025. It serves as a portal for alumni to connect and interact.
+This is a web application built for the Smart India Hackathon 2025. It is an Automated Attendance System for Rural Schools.
 
 ## Prerequisites
 
