@@ -5,6 +5,7 @@ import { Inter } from "next/font/google";
 
 import "./globals.css";
 import Providers from "./providers"; // <-- IMPORT
+import RegisterServiceWorker from "./register-sw";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -22,9 +23,14 @@ export default function RootLayout({
     <html lang="en">
       <head>
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+        <link rel="manifest" href="/manifest.webmanifest" />
+        <meta name="theme-color" content="#0ea5e9" />
       </head>
       <body className={inter.className}>
-        <Providers>{children}</Providers> {/* <-- WRAP HERE */}
+        <Providers>
+          {children}
+          <RegisterServiceWorker />
+        </Providers> {/* <-- WRAP HERE */}
       </body>
     </html>
   );

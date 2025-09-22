@@ -2,13 +2,15 @@
 import mongoose from 'mongoose';
 
 const connectToDatabase = async () => {
-  // If we're already connected, don't create a new connection
+  const uri = process.env.MONGODB_URI;
+  if (!uri) {
+    // Allow app to run without DB in local demo mode
+    return;
+  }
   if (mongoose.connection.readyState >= 1) {
     return;
   }
-  
-  // Otherwise, create a new connection
-  return mongoose.connect(process.env.MONGODB_URI!);
+  return mongoose.connect(uri);
 };
 
 export default connectToDatabase;
