@@ -3,15 +3,17 @@
 import NextAuth from "next-auth";
 import { NextAuthOptions } from 'next-auth';
 import { MongoDBAdapter } from "@auth/mongodb-adapter";
-import clientPromise from "@/lib/mongodb";
+import getMongoClientPromise from "@/lib/mongodb";
 import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
 import User from "@/models/user";
 import connectToDatabase from "@/lib/database";
 // We are temporarily removing the credentials provider to isolate the Google issue
 
+const maybeAdapter = process.env.MONGODB_URI ? MongoDBAdapter(getMongoClientPromise()) : undefined;
+
 export const authOptions: NextAuthOptions = {
-  adapter: MongoDBAdapter(clientPromise),
+  adapter: maybeAdapter as any,
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
@@ -44,9 +46,7 @@ export const authOptions: NextAuthOptions = {
       }
     })
   ],
-  session: {
-    strategy: "database",
-  },
+  session: process.env.MONGODB_URI ? { strategy: "database" } : { strategy: "jwt" },
   secret: process.env.NEXTAUTH_SECRET,
   pages: {
     signIn: '/login',

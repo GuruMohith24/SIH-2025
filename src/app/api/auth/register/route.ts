@@ -1,37 +1,71 @@
-// src/app/api/auth/register/route.ts
+import { NextRequest, NextResponse } from "next/server";
+import bcrypt from "bcryptjs";
+import connectToDatabase from "@/lib/database";
+import User from "@/models/user";
+import Student from "@/models/student";
 
-import { NextResponse } from 'next/server';
-import mongoose from 'mongoose';
-import bcrypt from 'bcryptjs';
-// Update the path below if your user model is located elsewhere
-import User from '@/models/user'; // Import our User model
-
-const connectToDatabase = async () => {
-  if (mongoose.connection.readyState >= 1) return;
-  return mongoose.connect(process.env.MONGODB_URI!);
-};
-
-export async function POST(request: Request) {
+export async function POST(req: NextRequest) {
   try {
-    const { name, email, password } = await request.json();
+    const { name, email, password, role, class: className, rollNumber } = await req.json();
 
-    // Connect to our database
-    await connectToDatabase();
-
-    // Check if a user with this email already exists
-    const userExists = await User.findOne({ email });
-    if (userExists) {
-      return NextResponse.json({ message: "Email already in use." }, { status: 400 });
+    // Validate required fields
+    if (!name || !email || !password) {
+      return NextResponse.json({ error: "Name, email, and password are required" }, { status: 400 });
     }
 
-    // Hash the password for security
-    const hashedPassword = await bcrypt.hash(password, 10);
+    // Validate student-specific fields
+    if (role === 'student' && (!className || !rollNumber)) {
+      return NextResponse.json({ error: "Class and roll number are required for students" }, { status: 400 });
+    }
 
-    // Create the new user in the database
-    await User.create({ name, email, password: hashedPassword });
+    // Connect to database
+    await connectToDatabase();
 
-    return NextResponse.json({ message: "User registered successfully!" }, { status: 201 });
+    // Check if user already exists
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return NextResponse.json({ error: "User with this email already exists" }, { status: 400 });
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 12);
+
+    // Create user
+    const user = new User({
+      name,
+      email,
+      password: hashedPassword,
+      role
+    });
+
+    await user.save();
+
+    // If student, create student record
+    if (role === 'student') {
+      const student = new Student({
+        name,
+        email,
+        class: className,
+        rollNumber: parseInt(rollNumber),
+        userId: user._id,
+        faceDescriptors: [],
+        qrCodeId: `QR_${user._id}_${Date.now()}`
+      });
+
+      await student.save();
+    }
+
+    return NextResponse.json({ 
+      message: "User created successfully",
+      userId: user._id,
+      role: user.role
+    });
+
   } catch (error) {
-    return NextResponse.json({ message: "An error occurred." }, { status: 500 });
+    console.error("Registration error:", error);
+    return NextResponse.json(
+      { error: "Registration failed" }, 
+      { status: 500 }
+    );
   }
 }
